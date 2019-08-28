@@ -16,10 +16,10 @@ def get_csv(file):
 
     os.rename(import_file_path, import_file_path[0:-3] + "csv")
     df = pd.read_csv(import_file_path[0:-3] + "csv", sep='\s*,\s*', engine='python')
-    df = pd.read_csv(import_file_path, sep='\s*,\s*', engine='python')
 
-    df['Address'] = df['Timestamp']
-    df['Timestamp'] = df.index
+    if import_file_path[-3:] != "csv":
+        df['Address'] = df['Timestamp']
+        df['Timestamp'] = df.index
 
     print(df)
     dataFiles.append(df)
@@ -168,7 +168,11 @@ def match_movements(end_time_entry, output_path, output_name, scan_time):
 
     # output_table.drop(output_table['Time'] < start_time)
 
-    path = output_path + output_name + '.csv'
+    if os.name == 'nt':
+        path = output_path + '\\' + output_name + '.csv'
+    else:
+        path = output_path + '/' + output_name + '.csv'
+
     output_table.to_csv(path_or_buf=path, index=False)
     print(output_table)
 
@@ -190,7 +194,7 @@ layout = [[sg.Text('Configure import and select files')],
            sg.InputText('', key='_SCAN_ERROR_')],
           # [sg.Text('Start Date'), sg.InputText('MMDDYYYY hh:mm:ss', key='_TOTAL_START_DATE_')],
           [sg.Text('End Date'), sg.InputText('MMDDYYYY hh:mm:ss', key='_TOTAL_END_DATE_')],
-          [sg.Text('Output Folder'), sg.FileBrowse(target='_OUT_FOLDER_'),
+          [sg.Text('Output Folder'), sg.FolderBrowse(target='_OUT_FOLDER_'),
            sg.Input(key='_OUT_FOLDER_')],
           [sg.Text('Output File Name'), sg.InputText('', key='_OUT_FILE_NAME_')],
           [sg.Ok(), sg.Cancel()]]
