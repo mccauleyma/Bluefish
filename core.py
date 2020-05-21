@@ -293,7 +293,8 @@ while True:  # Event Loop
             valid = False
             text_time_in = ''
             while not valid:
-                text_time_in = sg.PopupGetText('Enter the start time in hh:mm:ss format for ' + approach_names[k])
+                text_time_in = sg.PopupGetText('Enter the start time in hh:mm:ss format for '
+                                               + approach_names[k], 'Start Time')
                 try:
                     time.strptime(text_time_in, '%H:%M:%S')
                 except ValueError:
