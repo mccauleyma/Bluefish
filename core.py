@@ -138,8 +138,8 @@ def cont_processing(white_noise_threshold, scan_time, scan_error):
         address_table[i] = remove_values_from_list(address_table[i], 0)
 
         global temp_log
-        temp_log = temp_log + "Removed " + str(white_noise_count) + " white-noise addresses from approach "\
-            + approach_names[i] + "\n"
+        window.Element('_CONSOLE_').Update(window.Element('_CONSOLE_').Get() + "Removed " + str(white_noise_count) +
+                                           " white-noise addresses from approach " + approach_names[i] + "\n")
 
 
 """ check_inner_loop(out_i, out_ii, address, interval, time_range)
@@ -157,8 +157,8 @@ RETURNS None
 def check_inner_loop(out_i, out_ii, address, interval, time_range):
     # for in_ii in range(out_i + 1, out_i + int((time_range * 1000) / interval)):
     for in_ii in reversed(range(out_i + 1, out_i + int((time_range * 1000) / interval))):
-        for in_i in range(1, len(approach_names) + 1):
-            if in_ii < len(matching_table['Time']):
+        if in_ii < len(matching_table['Time']):
+            for in_i in range(1, len(approach_names) + 1):
                 if address in matching_table.iat[in_ii, in_i]:
                     # logically this is: (((out_ii - 1) * len(approach_names)) + 1) + (in_i - 1), but the +/- 1 cancel
                     output_table.iat[in_ii, ((out_ii - 1) * len(approach_names)) + in_i] =\
@@ -228,7 +228,7 @@ def match_movements(start_time_entry, end_time_entry, output_path, output_name, 
             output_table[approach_names[i] + ' -> ' + approach_names[ii]] = np.nan
     output_table = output_table.fillna(0)
 
-    matching_table.drop(matching_table[matching_table['Time'] < start_time].index, inplace=True)
+    matching_table.drop(matching_table[matching_table['Time'] < start_time - max(time_to_cross)].index, inplace=True)
 
     for i in range(len(matching_table['Time'])):
         for ii in range(1, len(approach_names) + 1):
