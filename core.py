@@ -255,13 +255,11 @@ approach_names = []
 
 # First window layout and initialization
 layout = [[sg.Text('Configure import and select files')],
-          [sg.Radio('Combined', "FileProcess", key="_FILE_PROCESS_", default=True),
-           sg.Radio('Separate', "FileProcess")],
           [sg.Text('Submitted files'), sg.Multiline('', size=(15, 5), key='_FILES_')],
           [sg.Text('Select Files'), sg.FileBrowse(target='_FILE_NAME_'),
            sg.Input(key='_FILE_NAME_', visible=False, enable_events=True)],
           [sg.Text('White Noise Threshold'),
-           sg.Slider(range=(0, 100), key='_WHITE_NOISE_', default_value=25, orientation='horizontal')],
+           sg.Slider(range=(0, 100), key='_WHITE_NOISE_', default_value=10, orientation='horizontal')],
           [sg.Text('Scan Time'), sg.InputText('', key='_SCAN_TIME_'), sg.Text('Scan Error'),
            sg.InputText('', key='_SCAN_ERROR_')],
           [sg.Text('Start Date'), sg.InputText('MM/DD/YY hh:mm:ss', key='_TOTAL_START_DATE_')],
@@ -276,25 +274,37 @@ window = sg.Window("Bluefish File Processor", layout)
 while True:  # Event Loop
     event, values = window.Read()
     if event is None or event == 'Exit' or event == 'Cancel':
-        break
+        exit()
     if event == '_FILE_NAME_':
         window.Element('_FILES_').Update(window.Element('_FILES_').Get() + window.Element('_FILE_NAME_').Get())
         get_csv(window.Element('_FILE_NAME_').Get())
     elif event == 'Ok':
-        # TODO: File Process system (for separate files and offsets)
         address_table = setup_address_table()
 
         total_start_time = window.Element('_TOTAL_START_DATE_').Get()
-        start_day = datetime.fromtimestamp(time.mktime(time.strptime(total_start_time, '%m/%d/%y %H:%M:%S'))).strftime('%m/%d/%y')
+        start_day = datetime.fromtimestamp(
+            time.mktime(time.strptime(total_start_time, '%m/%d/%y %H:%M:%S'))).strftime('%m/%d/%y')
 
-        for index_1 in range(0, len(dataFiles)):
-            text_name_in = sg.PopupGetText('Enter a name for the approach in data file ' + str(index_1 + 1),
+        for k in range(0, len(dataFiles)):
+            text_name_in = sg.PopupGetText('Enter a name for the approach in data file ' + str(k + 1),
                                            'Approach Name')
             approach_names.append(text_name_in)
-            text_time_in = sg.PopupGetText('Enter the start time in hh:mm:ss format for ' + approach_names[index_1])
-            if sg.PopupYesNo('Are you sure ' + text_time_in + ' is correct?') != 'Yes':
-                text_time_in = sg.PopupGetText('Enter the start time in hh:mm:ss format for ' + approach_names[index_1])
-            process_file(index_1, start_day + ' ' + text_time_in)
+
+            valid = False
+            text_time_in = ''
+            while not valid:
+                text_time_in = sg.PopupGetText('Enter the start time in hh:mm:ss format for ' + approach_names[k])
+                try:
+                    time.strptime(text_time_in, '%H:%M:%S')
+                except ValueError:
+                    valid = False
+                    sg.PopupOK('That was not a valid date and time. Please try again.')
+                else:
+                    valid = True
+                    if sg.PopupYesNo('Are you sure ' + text_time_in + ' is correct?') != 'Yes':
+                        valid = False
+
+            process_file(k, start_day + ' ' + text_time_in)
 
         break
 
@@ -326,7 +336,18 @@ while True:  # Event Loop
         break
     if event == 'Submit':
         for j in range(len(address_table)):
-            time_to_cross.append(int(sg.PopupGetText(approach_names[j] + " time to cross: ")))
+            valid = False
+            ttc_in = ''
+            while not valid:
+                ttc_in = sg.PopupGetText(approach_names[j] + " time to cross (seconds): ")
+                try:
+                    int(ttc_in)
+                except ValueError:
+                    valid = False
+                    sg.PopupError('That was not a valid number. Please try again.')
+                else:
+                    valid = True
+            time_to_cross.append(int(ttc_in))
 
         cont_processing(noise_threshold, int(scan_time_in), int(scan_error_in))
         match_movements(total_start_time, total_end_time, out_folder, out_file_name, int(scan_time_in))
