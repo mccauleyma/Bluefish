@@ -340,7 +340,7 @@ while True:  # Event Loop
             valid = False
             ttc_in = ''
             while not valid:
-                ttc_in = sg.PopupGetText(approach_names[j] + " time to cross (seconds): ")
+                ttc_in = sg.PopupGetText(approach_names[j] + " time to cross (seconds): ", 'Time to Cross')
                 try:
                     int(ttc_in)
                 except ValueError:
