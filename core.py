@@ -229,6 +229,7 @@ def match_movements(start_time_entry, end_time_entry, output_path, output_name, 
     output_table = output_table.fillna(0)
 
     matching_table.drop(matching_table[matching_table['Time'] < start_time - max(time_to_cross)].index, inplace=True)
+    output_table.drop(output_table[output_table['Time'] < start_time].index, inplace=True)
 
     for i in range(len(matching_table['Time'])):
         for ii in range(1, len(approach_names) + 1):
@@ -237,8 +238,6 @@ def match_movements(start_time_entry, end_time_entry, output_path, output_name, 
                 for iii in range(len(cell)):
                     address = cell[iii]
                     check_inner_loop(i, ii, address, factor, time_to_cross[ii - 1])
-
-    output_table.drop(output_table[output_table['Time'] < start_time].index, inplace=True)
 
     if os.name == 'nt':
         path = output_path + '\\' + output_name + '.csv'
