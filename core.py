@@ -13,8 +13,8 @@ df = pd.DataFrame
 def get_csv(file):
     """ get_csv(file)
     file = file path to a csv data file
-    Reads a given csv and copies the data to a formatted DataFrame. This structure is declare as a global variable, rather
-    than returning the frame.
+    Reads a given csv and copies the data to a formatted DataFrame. This structure is declare as a global variable,
+    rather than returning the frame.
     RETURNS None
     """
     global df
@@ -79,8 +79,8 @@ def process_file(index, offset_time):
     index = index of the target file in the dataFile array
     offset_time = text input of what time the target file started recording in MM/DD/YY hh:mm:ss format
     Edits the target data file such that timestamps are in time since epoch (rather than time since system boot up).
-    Additionally counts unique addresses, for early analysis/human error detection, which is added to the temp log. These
-    unique addresses are stored in the address_table for further use.
+    Additionally counts unique addresses, for early analysis/human error detection, which is added to the temp log.
+    These unique addresses are stored in the address_table for further use.
     RETURNS None"""
     time_offset = time.mktime(time.strptime(offset_time, '%m/%d/%y %H:%M:%S')) * 1000
     time_offsets.append(time_offset)
@@ -92,7 +92,7 @@ def process_file(index, offset_time):
         address_table[index].append(dataFiles[index].loc[dataFiles[index]['Address'] == unique_addresses[i]])
 
     global temp_log
-    temp_log = temp_log + "Found " + str(len(unique_addresses)) + " unique addresses in approach "\
+    temp_log = temp_log + "Found " + str(len(unique_addresses)) + " unique addresses in approach " \
         + approach_names[index] + "\n"
 
 
@@ -101,8 +101,8 @@ def cont_processing(white_noise_threshold, scan_time, scan_error):
     white_noise_threshold = percentage presence a MAC needs to be considered noise
     scan_time = BT scan time in seconds
     scan_error = number of scans that can be missed before being considered a new presence/arrival
-    Checks the count of each unique address against the count of time intervals in the dataset. If the address is present
-    in a percentage of intervals greater than given by the threshold then the address is entirely removed. Time
+    Checks the count of each unique address against the count of time intervals in the dataset. If the address is
+    present in a percentage of intervals greater than given by the threshold then the address is entirely removed. Time
     differentials between occurrences of each MAC are calculated and utilized to determine when an address is considered
     miss-scanned or an actual new occurrence. Each block of addresses considered a single occurrence are reduced to one.
     RETURNS None"""
@@ -122,7 +122,7 @@ def cont_processing(white_noise_threshold, scan_time, scan_error):
         for ii in range(len(address_table[i])):
             address_table[i][ii]['Time_Dif'] = address_table[i][ii]['Timestamp'] - \
                                                address_table[i][ii]['Timestamp'].shift(1)
-            address_table[i][ii] = address_table[i][ii]\
+            address_table[i][ii] = address_table[i][ii] \
                 .drop(address_table[i][ii][address_table[i][ii]['Time_Dif'] < (scan_time * scan_error * 1000)].index)
 
         address_table[i] = remove_values_from_list(address_table[i], 0)
@@ -140,7 +140,7 @@ def check_inner_loop(out_i, out_ii, address, interval, time_range):
     interval = scan time in milliseconds
     time_range = maximum time to cross in seconds
     Given a start index and an address, this function checks the data frame for another occurrence of the given address,
-    within the maximum time to cross. If a match is found, the address is added to the output table in the appropriate cell.
+    within the maximum time to cross. If a match is found, the address is added to the output table in the matched cell.
     RETURNS None"""
     # for in_ii in range(out_i + 1, out_i + int((time_range * 1000) / interval)):
     for in_ii in reversed(range(out_i + 1, out_i + int((time_range * 1000) / interval))):
@@ -148,7 +148,7 @@ def check_inner_loop(out_i, out_ii, address, interval, time_range):
             for in_i in range(1, len(approach_names) + 1):
                 if address in matching_table.iat[in_ii, in_i]:
                     # logically this is: (((out_ii - 1) * len(approach_names)) + 1) + (in_i - 1), but the +/- 1 cancel
-                    output_table.iat[in_ii, ((out_ii - 1) * len(approach_names)) + in_i] =\
+                    output_table.iat[in_ii, ((out_ii - 1) * len(approach_names)) + in_i] = \
                         output_table.iat[in_ii, ((out_ii - 1) * len(approach_names)) + in_i] + 1
                     return
 
@@ -159,9 +159,9 @@ def match_movements(start_time_entry, end_time_entry, output_path, output_name, 
     output_path = output folder path
     output_name = output file name
     scan_time = BT scan interval in seconds
-    Creates a matching table consisting of all address scanned at each approach at each time. User is then prompted to enter
-    the maximum time to cross for each approach. This is then utilized to search for pairs within the matching table, which
-    are removed when found and added counted in the output table.
+    Creates a matching table consisting of all address scanned at each approach at each time. User is then prompted to
+    enter the maximum time to cross for each approach. This is then utilized to search for pairs within the matching
+    table, which are removed when found and added counted in the output table.
     RETURNS None"""
     if len(dataFiles) < 2:
         window.Element('_CONSOLE_').Update(window.Element('_CONSOLE_').Get() +
@@ -307,7 +307,6 @@ while True:  # Event Loop
             if output_folder_path is not None:
                 ex_file = xp.create_excel_from_csv(input_file, output_folder_path)
                 xp.format_excel(ex_file[0], ex_file[1], ex_file[2])
-
 
 # Fetch values from window after submission
 noise_threshold = values['_WHITE_NOISE_']
