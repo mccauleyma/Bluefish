@@ -241,7 +241,7 @@ approach_names = []
 
 # First window layout and initialization
 layout = [[sG.Text('Configure import and select files')],
-          [sG.Text('Submitted files'), sG.Multiline('', size=(40, 5), key='_FILES_')],
+          [sG.Text('Submitted files'), sG.Multiline('', size=(70, 5), key='_FILES_', autoscroll=True)],
           [sG.Text('Select Files'), sG.FileBrowse(target='_FILE_NAME_'),
            sG.Input(key='_FILE_NAME_', visible=False, enable_events=True)],
           [sG.Text('White Noise Threshold'),
