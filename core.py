@@ -216,7 +216,7 @@ def match_movements(start_time_entry, end_time_entry, output_path, output_name, 
     matching_table.drop(matching_table[matching_table['Time'] < start_time - max(time_to_cross)].index, inplace=True)
     output_table.drop(output_table[output_table['Time'] < start_time].index, inplace=True)
 
-    for i in range(len(matching_table['Time'])):
+    for i in range(len(matching_table['Time'])):  # TODO: Implement primary approaches
         for ii in range(1, len(approach_names) + 1):
             cell = matching_table.iat[i, ii]
             if len(cell) > 0:
@@ -291,6 +291,8 @@ while True:  # Event Loop
                         except ValueError:
                             valid = False
                             sG.PopupOK('That was not a valid date and time. Please try again.')
+                        except TypeError:
+                            cancelled = True  # TODO: When cancelling, make the names/times already entered clear
                         else:
                             valid = True
                             if sG.PopupYesNo('Are you sure ' + text_time_in + ' is correct?') != 'Yes':
@@ -342,7 +344,7 @@ while True:  # Event Loop
                 ttc_in = sG.PopupGetText(approach_names[j] + " time to cross (seconds): ", 'Time to Cross')
                 try:
                     int(ttc_in)
-                except ValueError:
+                except ValueError:  # TODO: Add code for cancelling mid ttc questions
                     valid = False
                     sG.PopupError('That was not a valid number. Please try again.')
                 else:
