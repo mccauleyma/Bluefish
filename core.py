@@ -8,7 +8,6 @@ import os
 import excel_processing as xp
 
 temp_log = ""
-# tray = sG.SystemTray(filename='blue-fish-clipart.png')
 if os.name == 'nt':
     bf_icon = 'img' + '\\' + 'blue-fish-clipart.ico' + '\\' + 'blue-fish-clipart.ico'
 else:
@@ -257,7 +256,6 @@ def match_movements(start_time_entry, end_time_entry, output_path, output_name, 
 
 dataFiles, dataFilesBackup, address_table, time_offsets, approach_names, primary_approaches = [], [], [], [], [], []
 
-# First window layout and initialization
 layout = [[sG.Text('Configure import and select files')],
           [sG.Text('Submitted files'), sG.Multiline('', size=(70, 5), key='_FILES_', autoscroll=True)],
           [sG.Text('Select Files'), sG.FileBrowse(target='_FILE_NAME_'),
@@ -326,7 +324,7 @@ while True:  # Event Loop
                                             title='Data File Setup #' + str(k + 1),
                                             icon=bf_icon)
 
-                        while True:
+                        while True:  # Nested Event Loop
                             event2, values2 = window2.Read()
                             if event2 is None or event2 == 'Exit' or event2 == 'Cancel':
                                 cancelled = True
@@ -378,7 +376,6 @@ matching_table = pd.DataFrame
 matching_table_debug = pd.DataFrame
 output_table = pd.DataFrame
 
-# Second window layout and initialization
 layout = [[sG.Text('Data Processing')],
           [sG.Multiline(temp_log + 'Click SUBMIT to start processing', key='_CONSOLE_', autoscroll=True)],
           [sG.Submit(), sG.CloseButton('Close')]]
