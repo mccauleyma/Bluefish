@@ -7,7 +7,6 @@ import os
 import excel_processing as xp
 
 temp_log = ""
-df = pd.DataFrame
 
 
 def get_csv(file):
@@ -17,7 +16,7 @@ def get_csv(file):
     rather than returning the frame.
     RETURNS None
     """
-    global df
+    df = pd.DataFrame
 
     os.rename(file, file[0:-3] + "csv")
     df = pd.read_csv(file[0:-3] + "csv", sep='\s*,\s*', engine='python')
@@ -28,6 +27,7 @@ def get_csv(file):
 
     print(df)
     dataFiles.append(df)
+    dataFilesBackup.append(df)
 
 
 def remove_values_from_list(the_list, val):
@@ -231,7 +231,7 @@ def match_movements(start_time_entry, end_time_entry, output_path, output_name, 
     global matching_table_debug
     matching_table_debug = matching_table.copy()  # Record for debugging
 
-    for i in range(len(matching_table['Time'])):  # TODO: Implement primary approaches
+    for i in range(len(matching_table['Time'])):
         for ii in range(1, len(approach_names) + 1):
             cell = matching_table.iat[i, ii]
             if len(cell) > 0:
@@ -249,11 +249,7 @@ def match_movements(start_time_entry, end_time_entry, output_path, output_name, 
     xp.format_excel(excel[0], excel[1], excel[2])
 
 
-dataFiles = []
-address_table = []
-time_offsets = []
-approach_names = []
-primary_approaches = []
+dataFiles, dataFilesBackup, address_table, time_offsets, approach_names, primary_approaches = [], [], [], [], [], []
 
 # First window layout and initialization
 layout = [[sG.Text('Configure import and select files')],
@@ -329,6 +325,12 @@ while True:  # Event Loop
 
         if cancelled is False:
             break
+        else:
+            approach_names, primary_approaches = [], []
+            address_table = setup_address_table()
+            dataFiles = dataFilesBackup
+            temp_log = temp_log + "Cancelled -> Reset Approaches\n"
+
     elif event == '_F_CSV_':
         input_file = sG.PopupGetFile('Select a CSV file to convert to Excel', 'Input File')
         if input_file is not None:
