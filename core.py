@@ -385,23 +385,29 @@ window = sG.Window("Bluefish Data Processor", layout, icon=bf_icon)
 while True:  # Event Loop
     event, values = window.Read()
     if event is None or event == 'Close':
-        break
+        exit()
     if event == 'Submit':
+        cancelled = False
         for j in range(len(address_table)):
             valid = False
             ttc_in = ''
-            while not valid:
+            while not valid and not cancelled:
                 ttc_in = sG.PopupGetText(approach_names[j] + " time to cross (seconds): ", 'Time to Cross',
                                          icon=bf_icon)
+
                 try:
                     int(ttc_in)
-                except ValueError:  # TODO: Add code for cancelling mid ttc questions
-                    valid = False
+                except ValueError:
                     sG.PopupError('That was not a valid number. Please try again.', icon=bf_icon)
+                except TypeError:
+                    cancelled = True
                 else:
                     valid = True
-            time_to_cross.append(int(ttc_in))
+                    time_to_cross.append(int(ttc_in))
 
-        cont_processing(noise_threshold, int(scan_time_in), int(scan_error_in))
-        match_movements(total_start_time, total_end_time, out_folder, out_file_name, int(scan_time_in))
-        window.Element('_CONSOLE_').Update(window.Element('_CONSOLE_').Get() + "----PROCESSING COMPLETE----")
+        if cancelled is False:
+            cont_processing(noise_threshold, int(scan_time_in), int(scan_error_in))
+            match_movements(total_start_time, total_end_time, out_folder, out_file_name, int(scan_time_in))
+            window.Element('_CONSOLE_').Update(window.Element('_CONSOLE_').Get() + "----PROCESSING COMPLETE----")
+        else:
+            time_to_cross = []
