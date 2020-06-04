@@ -142,7 +142,16 @@ def check_inner_loop(out_i, out_ii, address, interval, time_range):
     Given a start index and an address, this function checks the data frame for another occurrence of the given address,
     within the maximum time to cross. If a match is found, the address is added to the output table in the matched cell.
     RETURNS None"""
-    # for in_ii in range(out_i + 1, out_i + int((time_range * 1000) / interval)):
+    for jj in range(1, len(approach_names) + 1):
+        if jj != out_ii:
+            if address in matching_table.iat[out_i, jj]:
+                if primary_approaches[out_ii - 1] == primary_approaches[jj - 1]:
+                    return
+                elif primary_approaches[out_ii - 1] is False and primary_approaches[jj - 1] is True:
+                    return
+                else:
+                    break
+
     for in_ii in reversed(range(out_i + 1, out_i + int((time_range * 1000) / interval))):
         if in_ii < len(matching_table['Time']):
             for in_i in range(1, len(approach_names) + 1):
@@ -150,6 +159,10 @@ def check_inner_loop(out_i, out_ii, address, interval, time_range):
                     # logically this is: (((out_ii - 1) * len(approach_names)) + 1) + (in_i - 1), but the +/- 1 cancel
                     output_table.iat[in_ii, ((out_ii - 1) * len(approach_names)) + in_i] = \
                         output_table.iat[in_ii, ((out_ii - 1) * len(approach_names)) + in_i] + 1
+                    matching_table.iat[in_ii, in_i] = \
+                        [x + '-' if x == address else x for x in matching_table.iat[in_ii, in_i]]
+                    matching_table.iat[out_i, out_ii] = \
+                        [x + '+' if x == address else x for x in matching_table.iat[out_i, out_ii]]
                     return
 
 
@@ -215,6 +228,8 @@ def match_movements(start_time_entry, end_time_entry, output_path, output_name, 
 
     matching_table.drop(matching_table[matching_table['Time'] < start_time - max(time_to_cross)].index, inplace=True)
     output_table.drop(output_table[output_table['Time'] < start_time].index, inplace=True)
+    global matching_table_debug
+    matching_table_debug = matching_table.copy()  # Record for debugging
 
     for i in range(len(matching_table['Time'])):  # TODO: Implement primary approaches
         for ii in range(1, len(approach_names) + 1):
@@ -238,6 +253,7 @@ dataFiles = []
 address_table = []
 time_offsets = []
 approach_names = []
+primary_approaches = []
 
 # First window layout and initialization
 layout = [[sG.Text('Configure import and select files')],
@@ -273,35 +289,46 @@ while True:  # Event Loop
 
         cancelled = False
         for k in range(0, len(dataFiles)):
+            text_name_in, text_time_in = '', ''
+
             if cancelled is False:
-                text_name_in = sG.PopupGetText('Enter a name for the approach in data file ' + str(k + 1),
-                                               'Approach Name')
-                if text_name_in is None:
-                    cancelled = True
-                else:
-                    approach_names.append(text_name_in)
+                window2 = sG.Window(layout=[[sG.Text('Name for Approach'), sG.InputText(key='_NAME_')],
+                                            [sG.Text('Data Start Time'), sG.InputText('hh:mm:ss', key='_TIME_')],
+                                            [sG.Checkbox('Designate Primary Approach', key='_PRIMARY_')],
+                                            [sG.Ok(), sG.Cancel()]],
+                                    title='Data File Setup #' + str(k + 1))
 
-                    valid = False
-                    text_time_in = ''
-                    while not valid:
-                        text_time_in = sG.PopupGetText('Enter the start time in hh:mm:ss format for '
-                                                       + approach_names[k], 'Start Time')
-                        try:
-                            time.strptime(text_time_in, '%H:%M:%S')
-                        except ValueError:
-                            valid = False
-                            sG.PopupOK('That was not a valid date and time. Please try again.')
-                        except TypeError:
-                            cancelled = True  # TODO: When cancelling, make the names/times already entered clear
+                while True:
+                    event2, values2 = window2.Read()
+                    if event2 is None or event2 == 'Exit' or event2 == 'Cancel':
+                        cancelled = True
+                        break
+                    if event2 == 'Ok':
+                        text_name_in = window2.Element('_NAME_').Get()
+                        text_time_in = window2.Element('_TIME_').Get()
+
+                        if text_name_in is None or text_name_in == '':
+                            sG.PopupError('Please enter a name')
                         else:
-                            valid = True
-                            if sG.PopupYesNo('Are you sure ' + text_time_in + ' is correct?') != 'Yes':
-                                valid = False
+                            try:
+                                time.strptime(text_time_in, '%H:%M:%S')
+                            except ValueError:
+                                sG.PopupError('Please enter a valid time in hh:mm:ss format')
+                                window2.Element('_TIME_').Update('hh:mm:ss')
+                            except TypeError:
+                                sG.PopupError('Please enter a time')
+                            else:
+                                break
 
+                if cancelled is False:
+                    approach_names.append(text_name_in)
+                    primary_approaches.append(values2['_PRIMARY_'])
                     process_file(k, start_day + ' ' + text_time_in)
+
+                window2.Close()
+
         if cancelled is False:
             break
-
     elif event == '_F_CSV_':
         input_file = sG.PopupGetFile('Select a CSV file to convert to Excel', 'Input File')
         if input_file is not None:
@@ -310,7 +337,7 @@ while True:  # Event Loop
                 ex_file = xp.create_excel_from_csv(input_file, output_folder_path)
                 xp.format_excel(ex_file[0], ex_file[1], ex_file[2])
 
-# Fetch values from window after submission
+# Fetch values from window after submission TODO: Proper input validation for first primary window
 noise_threshold = values['_WHITE_NOISE_']
 total_start_time = window.Element('_TOTAL_START_DATE_').Get()
 total_end_time = window.Element('_TOTAL_END_DATE_').Get()
@@ -323,6 +350,7 @@ window.Close()
 
 time_to_cross = []
 matching_table = pd.DataFrame
+matching_table_debug = pd.DataFrame
 output_table = pd.DataFrame
 
 # Second window layout and initialization
