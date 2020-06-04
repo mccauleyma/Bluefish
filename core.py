@@ -1,3 +1,4 @@
+from sys import exit
 import pandas as pd
 import numpy as np
 import time
@@ -7,6 +8,11 @@ import os
 import excel_processing as xp
 
 temp_log = ""
+# tray = sG.SystemTray(filename='blue-fish-clipart.png')
+if os.name == 'nt':
+    bf_icon = 'img' + '\\' + 'blue-fish-clipart.ico' + '\\' + 'blue-fish-clipart.ico'
+else:
+    bf_icon = 'img' + '/' + 'blue-fish-clipart.ico' + '/' + 'blue-fish-clipart.ico'
 
 
 def get_csv(file):
@@ -267,7 +273,7 @@ layout = [[sG.Text('Configure import and select files')],
           [sG.Text('Output File Name'), sG.InputText('', key='_OUT_FILE_NAME_')],
           [sG.Ok(), sG.Cancel(), sG.Button(button_text='Format CSV', key='_F_CSV_')]]
 
-window = sG.Window("Bluefish File Processor", layout)
+window = sG.Window("Bluefish File Processor", layout, icon=bf_icon)
 
 while True:  # Event Loop
     event, values = window.Read()
@@ -292,7 +298,8 @@ while True:  # Event Loop
                                             [sG.Text('Data Start Time'), sG.InputText('hh:mm:ss', key='_TIME_')],
                                             [sG.Checkbox('Designate Primary Approach', key='_PRIMARY_')],
                                             [sG.Ok(), sG.Cancel()]],
-                                    title='Data File Setup #' + str(k + 1))
+                                    title='Data File Setup #' + str(k + 1),
+                                    icon=bf_icon)
 
                 while True:
                     event2, values2 = window2.Read()
@@ -304,15 +311,15 @@ while True:  # Event Loop
                         text_time_in = window2.Element('_TIME_').Get()
 
                         if text_name_in is None or text_name_in == '':
-                            sG.PopupError('Please enter a name')
+                            sG.PopupError('Please enter a name', icon=bf_icon)
                         else:
                             try:
                                 time.strptime(text_time_in, '%H:%M:%S')
                             except ValueError:
-                                sG.PopupError('Please enter a valid time in hh:mm:ss format')
+                                sG.PopupError('Please enter a valid time in hh:mm:ss format', icon=bf_icon)
                                 window2.Element('_TIME_').Update('hh:mm:ss')
                             except TypeError:
-                                sG.PopupError('Please enter a time')
+                                sG.PopupError('Please enter a time', icon=bf_icon)
                             else:
                                 break
 
@@ -332,9 +339,9 @@ while True:  # Event Loop
             temp_log = temp_log + "Cancelled -> Reset Approaches\n"
 
     elif event == '_F_CSV_':
-        input_file = sG.PopupGetFile('Select a CSV file to convert to Excel', 'Input File')
+        input_file = sG.PopupGetFile('Select a CSV file to convert to Excel', 'Input File', icon=bf_icon)
         if input_file is not None:
-            output_folder_path = sG.PopupGetFolder('Select a folder to output to', 'Output Destination')
+            output_folder_path = sG.PopupGetFolder('Select a folder to output to', 'Output Destination', icon=bf_icon)
             if output_folder_path is not None:
                 ex_file = xp.create_excel_from_csv(input_file, output_folder_path)
                 xp.format_excel(ex_file[0], ex_file[1], ex_file[2])
@@ -360,7 +367,7 @@ layout = [[sG.Text('Data Processing')],
           [sG.Multiline(temp_log + 'Click SUBMIT to start processing', key='_CONSOLE_', autoscroll=True)],
           [sG.Submit(), sG.CloseButton('Close')]]
 
-window = sG.Window("Bluefish Data Processor", layout)
+window = sG.Window("Bluefish Data Processor", layout, icon=bf_icon)
 
 while True:  # Event Loop
     event, values = window.Read()
@@ -371,12 +378,13 @@ while True:  # Event Loop
             valid = False
             ttc_in = ''
             while not valid:
-                ttc_in = sG.PopupGetText(approach_names[j] + " time to cross (seconds): ", 'Time to Cross')
+                ttc_in = sG.PopupGetText(approach_names[j] + " time to cross (seconds): ", 'Time to Cross',
+                                         icon=bf_icon)
                 try:
                     int(ttc_in)
                 except ValueError:  # TODO: Add code for cancelling mid ttc questions
                     valid = False
-                    sG.PopupError('That was not a valid number. Please try again.')
+                    sG.PopupError('That was not a valid number. Please try again.', icon=bf_icon)
                 else:
                     valid = True
             time_to_cross.append(int(ttc_in))
