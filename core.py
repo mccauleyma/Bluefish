@@ -264,10 +264,10 @@ layout = [[sG.Text('Configure import and select files')],
            sG.Input(key='_FILE_NAME_', visible=False, enable_events=True)],
           [sG.Text('White Noise Threshold'),
            sG.Slider(range=(0, 100), key='_WHITE_NOISE_', default_value=10, orientation='horizontal')],
-          [sG.Text('Scan Time'), sG.InputText('', key='_SCAN_TIME_'), sG.Text('Scan Error'),
+          [sG.Text('Scan Time'), sG.InputText('5', key='_SCAN_TIME_'), sG.Text('Scan Error'),
            sG.InputText('', key='_SCAN_ERROR_')],
-          [sG.Text('Start Date'), sG.InputText('MM/DD/YY hh:mm:ss', key='_TOTAL_START_DATE_')],
-          [sG.Text('End Date'), sG.InputText('MM/DD/YY hh:mm:ss', key='_TOTAL_END_DATE_')],
+          [sG.Text('Start Datetime'), sG.InputText('MM/DD/YY hh:mm:ss', key='_TOTAL_START_DATE_')],
+          [sG.Text('End Datetime'), sG.InputText('MM/DD/YY hh:mm:ss', key='_TOTAL_END_DATE_')],
           [sG.Text('Output Folder'), sG.FolderBrowse(target='_OUT_FOLDER_'),
            sG.Input(key='_OUT_FOLDER_')],
           [sG.Text('Output File Name'), sG.InputText('', key='_OUT_FILE_NAME_')],
@@ -283,60 +283,85 @@ while True:  # Event Loop
         window.Element('_FILES_').Update(window.Element('_FILES_').Get() + window.Element('_FILE_NAME_').Get())
         get_csv(window.Element('_FILE_NAME_').Get())
     elif event == 'Ok':
-        address_table = setup_address_table()
-
+        noise_threshold = values['_WHITE_NOISE_']
         total_start_time = window.Element('_TOTAL_START_DATE_').Get()
-        start_day = datetime.fromtimestamp(
-            time.mktime(time.strptime(total_start_time, '%m/%d/%y %H:%M:%S'))).strftime('%m/%d/%y')
+        total_end_time = window.Element('_TOTAL_END_DATE_').Get()
+        out_folder = window.Element('_OUT_FOLDER_').Get()
+        out_file_name = window.Element('_OUT_FILE_NAME_').Get()
+        scan_time_in = window.Element('_SCAN_TIME_').Get()
+        scan_error_in = window.Element('_SCAN_ERROR_').Get()
+        if total_end_time == '':
+            sG.PopupError('Please enter an end time', icon=bf_icon, title='Error')
+        elif total_start_time == '':
+            sG.PopupError('Please enter a start time', icon=bf_icon, title='Error')
+        elif out_folder == '':
+            sG.PopupError('Please select an output directory', icon=bf_icon, title='Error')
+        elif out_file_name == '':
+            sG.PopupError('Please enter an output file name', icon=bf_icon, title='Error')
+        elif scan_error_in == '':
+            sG.PopupError('Please enter an acceptable scan error limit', icon=bf_icon, title='Error')
+        else:
+            try:
+                time.strptime(total_start_time, '%m/%d/%y %H:%M:%S')
+                time.strptime(total_end_time, '%m/%d/%y %H:%M:%S')
+            except ValueError:
+                sG.PopupError('Please enter datetimes in MM:DD:YY hh:mm:ss format', icon=bf_icon, title='Error')
+                window.Element('_TOTAL_START_DATE_').Update('MM:DD:YY hh:mm:ss')
+                window.Element('_TOTAL_END_DATE_').Update('MM:DD:YY hh:mm:ss')
+            else:
+                address_table = setup_address_table()
 
-        cancelled = False
-        for k in range(0, len(dataFiles)):
-            text_name_in, text_time_in = '', ''
+                start_day = datetime.fromtimestamp(
+                    time.mktime(time.strptime(total_start_time, '%m/%d/%y %H:%M:%S'))).strftime('%m/%d/%y')
 
-            if cancelled is False:
-                window2 = sG.Window(layout=[[sG.Text('Name for Approach'), sG.InputText(key='_NAME_')],
-                                            [sG.Text('Data Start Time'), sG.InputText('hh:mm:ss', key='_TIME_')],
-                                            [sG.Checkbox('Designate Primary Approach', key='_PRIMARY_')],
-                                            [sG.Ok(), sG.Cancel()]],
-                                    title='Data File Setup #' + str(k + 1),
-                                    icon=bf_icon)
+                cancelled = False
+                for k in range(0, len(dataFiles)):
+                    text_name_in, text_time_in = '', ''
 
-                while True:
-                    event2, values2 = window2.Read()
-                    if event2 is None or event2 == 'Exit' or event2 == 'Cancel':
-                        cancelled = True
-                        break
-                    if event2 == 'Ok':
-                        text_name_in = window2.Element('_NAME_').Get()
-                        text_time_in = window2.Element('_TIME_').Get()
+                    if cancelled is False:
+                        window2 = sG.Window(layout=[[sG.Text('Name for Approach'), sG.InputText(key='_NAME_')],
+                                                    [sG.Text('Data Start Time'), sG.InputText('hh:mm:ss', key='_TIME_')],
+                                                    [sG.Checkbox('Designate Primary Approach', key='_PRIMARY_')],
+                                                    [sG.Ok(), sG.Cancel()]],
+                                            title='Data File Setup #' + str(k + 1),
+                                            icon=bf_icon)
 
-                        if text_name_in is None or text_name_in == '':
-                            sG.PopupError('Please enter a name', icon=bf_icon)
-                        else:
-                            try:
-                                time.strptime(text_time_in, '%H:%M:%S')
-                            except ValueError:
-                                sG.PopupError('Please enter a valid time in hh:mm:ss format', icon=bf_icon)
-                                window2.Element('_TIME_').Update('hh:mm:ss')
-                            except TypeError:
-                                sG.PopupError('Please enter a time', icon=bf_icon)
-                            else:
+                        while True:
+                            event2, values2 = window2.Read()
+                            if event2 is None or event2 == 'Exit' or event2 == 'Cancel':
+                                cancelled = True
                                 break
+                            if event2 == 'Ok':
+                                text_name_in = window2.Element('_NAME_').Get()
+                                text_time_in = window2.Element('_TIME_').Get()
+
+                                if text_name_in is None or text_name_in == '':
+                                    sG.PopupError('Please enter a name', icon=bf_icon)
+                                else:
+                                    try:
+                                        time.strptime(text_time_in, '%H:%M:%S')
+                                    except ValueError:
+                                        sG.PopupError('Please enter a valid time in hh:mm:ss format', icon=bf_icon)
+                                        window2.Element('_TIME_').Update('hh:mm:ss')
+                                    except TypeError:
+                                        sG.PopupError('Please enter a time', icon=bf_icon)
+                                    else:
+                                        break
+
+                        if cancelled is False:
+                            approach_names.append(text_name_in)
+                            primary_approaches.append(values2['_PRIMARY_'])
+                            process_file(k, start_day + ' ' + text_time_in)
+
+                        window2.Close()
 
                 if cancelled is False:
-                    approach_names.append(text_name_in)
-                    primary_approaches.append(values2['_PRIMARY_'])
-                    process_file(k, start_day + ' ' + text_time_in)
-
-                window2.Close()
-
-        if cancelled is False:
-            break
-        else:
-            approach_names, primary_approaches = [], []
-            address_table = setup_address_table()
-            dataFiles = dataFilesBackup
-            temp_log = temp_log + "Cancelled -> Reset Approaches\n"
+                    break
+                else:
+                    approach_names, primary_approaches = [], []
+                    address_table = setup_address_table()
+                    dataFiles = dataFilesBackup
+                    temp_log = temp_log + "Cancelled -> Reset Approaches\n"
 
     elif event == '_F_CSV_':
         input_file = sG.PopupGetFile('Select a CSV file to convert to Excel', 'Input File', icon=bf_icon)
@@ -345,15 +370,6 @@ while True:  # Event Loop
             if output_folder_path is not None:
                 ex_file = xp.create_excel_from_csv(input_file, output_folder_path)
                 xp.format_excel(ex_file[0], ex_file[1], ex_file[2])
-
-# Fetch values from window after submission TODO: Proper input validation for first primary window
-noise_threshold = values['_WHITE_NOISE_']
-total_start_time = window.Element('_TOTAL_START_DATE_').Get()
-total_end_time = window.Element('_TOTAL_END_DATE_').Get()
-out_folder = window.Element('_OUT_FOLDER_').Get()
-out_file_name = window.Element('_OUT_FILE_NAME_').Get()
-scan_time_in = window.Element('_SCAN_TIME_').Get()
-scan_error_in = window.Element('_SCAN_ERROR_').Get()
 
 window.Close()
 
