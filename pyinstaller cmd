@@ -1,2 +1,1 @@
-pyinstaller --name BFTool --hidden-import pkg_resources.py2_warn --icon blue-fish-clipart.ico --add-data blue-fish-clipart.ico;img\blue-fish-cli
-part.ico --clean --windowed core.py
+pyinstaller --name BFTool --hidden-import pkg_resources.py2_warn --icon blue-fish-clipart.ico --add-data blue-fish-clipart.ico;img\blue-fish-clipart.ico --clean --windowed core.py
