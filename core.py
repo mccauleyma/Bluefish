@@ -9,9 +9,9 @@ import excel_processing as xp
 
 temp_log = ""
 if os.name == 'nt':
-    bf_icon = 'img' + '\\' + 'blue-fish-clipart.ico' + '\\' + 'blue-fish-clipart.ico'
+    bf_icon = 'img\\blue-fish-clipart.ico\\blue-fish-clipart.ico'
 else:
-    bf_icon = 'img' + '/' + 'blue-fish-clipart.ico' + '/' + 'blue-fish-clipart.ico'
+    bf_icon = 'img/blue-fish-clipart.png'
 
 
 def get_csv(file):
