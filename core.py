@@ -21,8 +21,6 @@ def get_csv(file):
     rather than returning the frame.
     RETURNS None
     """
-    df = pd.DataFrame
-
     os.rename(file, file[0:-3] + "csv")
     df = pd.read_csv(file[0:-3] + "csv", sep='\s*,\s*', engine='python')
 
@@ -254,7 +252,8 @@ def match_movements(start_time_entry, end_time_entry, output_path, output_name, 
     xp.format_excel(excel[0], excel[1], excel[2])
 
 
-dataFiles, dataFilesBackup, address_table, time_offsets, approach_names, primary_approaches = [], [], [], [], [], []
+dataFiles, dataFilesBackup, address_table, time_offsets, approach_names, primary_approaches, file_paths = \
+    [], [], [], [], [], [], []
 
 layout = [[sG.Text('Configure import and select files')],
           [sG.Text('Submitted files'), sG.Multiline('', size=(70, 5), key='_FILES_', autoscroll=True)],
@@ -278,8 +277,11 @@ while True:  # Event Loop
     if event is None or event == 'Exit' or event == 'Cancel':
         exit()
     if event == '_FILE_NAME_':
-        window.Element('_FILES_').Update(window.Element('_FILES_').Get() + window.Element('_FILE_NAME_').Get())
-        get_csv(window.Element('_FILE_NAME_').Get())
+        file_name_raw = window.Element('_FILE_NAME_').Get()
+        if file_name_raw not in file_paths and file_name_raw != '':
+            window.Element('_FILES_').Update(window.Element('_FILES_').Get() + file_name_raw)
+            get_csv(file_name_raw)
+            file_paths.append(file_name_raw)
     elif event == 'Ok':
         noise_threshold = values['_WHITE_NOISE_']
         total_start_time = window.Element('_TOTAL_START_DATE_').Get()
