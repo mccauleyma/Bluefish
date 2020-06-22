@@ -163,9 +163,9 @@ def check_inner_loop(out_i, out_ii, address, interval, time_range):
                     output_table.iat[in_ii, ((out_ii - 1) * len(approach_names)) + in_i] = \
                         output_table.iat[in_ii, ((out_ii - 1) * len(approach_names)) + in_i] + 1
                     matching_table.iat[in_ii, in_i] = \
-                        [x + '-' if x == address else x for x in matching_table.iat[in_ii, in_i]]
+                        [x + '-' + str(in_ii) if x == address else x for x in matching_table.iat[in_ii, in_i]]
                     matching_table.iat[out_i, out_ii] = \
-                        [x + '+' if x == address else x for x in matching_table.iat[out_i, out_ii]]
+                        [x + '+' + str(out_i) if x == address else x for x in matching_table.iat[out_i, out_ii]]
                     return
 
 
