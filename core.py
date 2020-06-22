@@ -112,10 +112,8 @@ def cont_processing(white_noise_threshold, scan_time, scan_error):
     white_noise_count = 0
 
     for i in range(len(address_table)):
-        time_size = len(dataFiles[i]['Timestamp'].unique())
-
         for ii in range(len(address_table[i])):
-            if address_table[i][ii].index.size > (white_noise_threshold * time_size):
+            if address_table[i][ii].index.size > white_noise_threshold:
                 address_table[i][ii] = 0
                 white_noise_count += 1
 
@@ -260,7 +258,7 @@ layout = [[sG.Text('Configure import and select files')],
           [sG.Text('Select Files'), sG.FileBrowse(target='_FILE_NAME_'),
            sG.Input(key='_FILE_NAME_', visible=False, enable_events=True)],
           [sG.Text('White Noise Threshold'),
-           sG.Slider(range=(0, 100), key='_WHITE_NOISE_', default_value=10, orientation='horizontal')],
+           sG.Slider(range=(0, 500), key='_WHITE_NOISE_', default_value=100, orientation='horizontal')],
           [sG.Text('Scan Time'), sG.InputText('5', key='_SCAN_TIME_'), sG.Text('Scan Error'),
            sG.InputText('', key='_SCAN_ERROR_')],
           [sG.Text('Start Datetime'), sG.InputText('MM/DD/YY hh:mm:ss', key='_TOTAL_START_DATE_')],
@@ -319,21 +317,21 @@ while True:  # Event Loop
                     text_name_in, text_time_in = '', ''
 
                     if cancelled is False:
-                        window2 = sG.Window(layout=[[sG.Text('Name for Approach'), sG.InputText(key='_NAME_')],
-                                                    [sG.Text('Data Start Time'), sG.InputText('hh:mm:ss', key='_TIME_')],
-                                                    [sG.Checkbox('Designate Primary Approach', key='_PRIMARY_')],
-                                                    [sG.Ok(), sG.Cancel()]],
-                                            title='Data File Setup #' + str(k + 1),
-                                            icon=bf_icon)
+                        win2 = sG.Window(layout=[[sG.Text('Name for Approach'), sG.InputText(key='_NAME_')],
+                                                 [sG.Text('Data Start Time'), sG.InputText('hh:mm:ss', key='_TIME_')],
+                                                 [sG.Checkbox('Designate Primary Approach', key='_PRIMARY_')],
+                                                 [sG.Ok(), sG.Cancel()]],
+                                         title='Data File Setup #' + str(k + 1),
+                                         icon=bf_icon)
 
                         while True:  # Nested Event Loop
-                            event2, values2 = window2.Read()
+                            event2, values2 = win2.Read()
                             if event2 is None or event2 == 'Exit' or event2 == 'Cancel':
                                 cancelled = True
                                 break
                             if event2 == 'Ok':
-                                text_name_in = window2.Element('_NAME_').Get()
-                                text_time_in = window2.Element('_TIME_').Get()
+                                text_name_in = win2.Element('_NAME_').Get()
+                                text_time_in = win2.Element('_TIME_').Get()
 
                                 if text_name_in is None or text_name_in == '':
                                     sG.PopupError('Please enter a name', icon=bf_icon)
@@ -342,7 +340,7 @@ while True:  # Event Loop
                                         time.strptime(text_time_in, '%H:%M:%S')
                                     except ValueError:
                                         sG.PopupError('Please enter a valid time in hh:mm:ss format', icon=bf_icon)
-                                        window2.Element('_TIME_').Update('hh:mm:ss')
+                                        win2.Element('_TIME_').Update('hh:mm:ss')
                                     except TypeError:
                                         sG.PopupError('Please enter a time', icon=bf_icon)
                                     else:
@@ -353,7 +351,7 @@ while True:  # Event Loop
                             primary_approaches.append(values2['_PRIMARY_'])
                             process_file(k, start_day + ' ' + text_time_in)
 
-                        window2.Close()
+                        win2.Close()
 
                 if cancelled is False:
                     break
