@@ -7,6 +7,8 @@ import PySimpleGUI as sG
 import os
 import excel_processing as xp
 
+# TODO: Add recover from last session system
+
 temp_log = ""
 if os.name == 'nt':
     bf_icon = 'img\\blue-fish-clipart.ico\\blue-fish-clipart.ico'
