@@ -8,6 +8,7 @@ import os
 import excel_processing as xp
 
 # TODO: Add recover from last session system
+# TODO: Finish implementing timing output
 
 temp_log = ""
 if os.name == 'nt':
@@ -162,6 +163,10 @@ def check_inner_loop(out_i, out_ii, address, interval, time_range):
                     # logically this is: (((out_ii - 1) * len(approach_names)) + 1) + (in_i - 1), but the +/- 1 cancel
                     output_table.iat[in_ii, ((out_ii - 1) * len(approach_names)) + in_i] = \
                         output_table.iat[in_ii, ((out_ii - 1) * len(approach_names)) + in_i] + 1
+                    output_table_timings.append(
+                        [matching_table['Time'].iat[out_i], matching_table['Time'].iat[in_ii],
+                         approach_names[out_ii - 1], approach_names[in_i - 1],
+                         (matching_table['Time'].iat[in_ii] - matching_table['Time'].iat[out_i]) / 1000])
                     matching_table.iat[in_ii, in_i] = \
                         [x + '-' + str(in_ii) if x == address else x for x in matching_table.iat[in_ii, in_i]]
                     matching_table.iat[out_i, out_ii] = \
@@ -242,12 +247,19 @@ def match_movements(start_time_entry, end_time_entry, output_path, output_name, 
                     address = cell[iii]
                     check_inner_loop(i, ii, address, factor, time_to_cross[ii - 1])
 
+    global output_table_timings
+    output_table_timings = pd.DataFrame(data=output_table_timings,
+                                        columns=['Start Time', 'End Time', 'Start Location', 'End Location', 'Elapsed'])
+
     if os.name == 'nt':
         path = output_path + '\\' + output_name + '.csv'
+        path_timing = output_path + '\\' + output_name + '_timings.csv'
     else:
         path = output_path + '/' + output_name + '.csv'
+        path_timing = output_path + '/' + output_name + '_timings.csv'
 
     output_table.to_csv(path_or_buf=path, index=False)
+    output_table_timings.to_csv(path_or_buf=path_timing, index=False)
     excel = xp.create_excel_from_df(output_table, output_path, output_name)
     xp.format_excel(excel[0], excel[1], excel[2])
 
@@ -377,6 +389,7 @@ time_to_cross = []
 matching_table = pd.DataFrame
 matching_table_debug = pd.DataFrame
 output_table = pd.DataFrame
+output_table_timings = []
 
 layout = [[sG.Text('Data Processing')],
           [sG.Multiline(temp_log + 'Click SUBMIT to start processing', key='_CONSOLE_', autoscroll=True)],
