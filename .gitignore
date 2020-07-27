@@ -1,10 +1,13 @@
 # Project exclude paths
 /venv/
-/dist/
-/build/
 /dist_venv/
 /dist_venv1/
 /dist_venv2/
 /dist_venv3/
-/BFTool.spec
 .idea
+/Processing Software/dist/
+/Processing Software/build/
+/Processing Software/BFTool.spec
+/build/
+/dist/
+/BFTool.spec
