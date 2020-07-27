@@ -8,7 +8,7 @@ import os
 import excel_processing as xp
 
 # TODO: Add recover from last session system
-# TODO: Finish implementing timing output
+# TODO: Finish implementing timing output?
 
 temp_log = ""
 if os.name == 'nt':
@@ -164,7 +164,7 @@ def check_inner_loop(out_i, out_ii, address, interval, time_range):
                     output_table.iat[in_ii, ((out_ii - 1) * len(approach_names)) + in_i] = \
                         output_table.iat[in_ii, ((out_ii - 1) * len(approach_names)) + in_i] + 1
                     output_table_timings.append(
-                        [matching_table['Time'].iat[out_i], matching_table['Time'].iat[in_ii],
+                        [address, matching_table['Time'].iat[out_i], matching_table['Time'].iat[in_ii],
                          approach_names[out_ii - 1], approach_names[in_i - 1],
                          (matching_table['Time'].iat[in_ii] - matching_table['Time'].iat[out_i]) / 1000])
                     matching_table.iat[in_ii, in_i] = \
@@ -249,7 +249,8 @@ def match_movements(start_time_entry, end_time_entry, output_path, output_name, 
 
     global output_table_timings
     output_table_timings = pd.DataFrame(data=output_table_timings,
-                                        columns=['Start Time', 'End Time', 'Start Location', 'End Location', 'Elapsed'])
+                                        columns=['Address', 'Start Time', 'End Time', 'Start Location', 'End Location',
+                                                 'Elapsed'])
 
     if os.name == 'nt':
         path = output_path + '\\' + output_name + '.csv'
