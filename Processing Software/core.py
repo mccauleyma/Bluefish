@@ -6,15 +6,27 @@ from datetime import datetime
 import PySimpleGUI as sG
 import os
 import excel_processing as xp
+from json import (load as jsonload, dump as jsondump)
 
-# TODO: Add recover from last session system
-# TODO: Finish implementing timing output?
+SCAN_TIME = 4
 
 temp_log = ""
 if os.name == 'nt':
     bf_icon = 'img\\blue-fish-clipart.ico\\blue-fish-clipart.ico'
 else:
     bf_icon = 'img/blue-fish-clipart.png'
+
+config_dict = {
+    "FC": 0,
+    "FMl": "",
+    "WN": "100",
+    "SE": "",
+    "SDt": "MM/DD/YY hh:mm:ss",
+    "EDt": "MM/DD/YY hh:mm:ss",
+    "OF": "",
+    "OFN": ""
+}
+recovery_opt = 0
 
 
 def get_csv(file):
@@ -265,23 +277,57 @@ def match_movements(start_time_entry, end_time_entry, output_path, output_name, 
     xp.format_excel(excel[0], excel[1], excel[2])
 
 
-dataFiles, dataFilesBackup, address_table, time_offsets, approach_names, primary_approaches, file_paths = \
-    [], [], [], [], [], [], []
+dataFiles, dataFilesBackup, address_table, time_offsets, approach_names, primary_approaches, file_paths, settings = \
+    [], [], [], [], [], [], [], []
+
+window2 = sG.Window("Session Recovery",
+                    [[sG.Radio('Files', "_RECOV_OPT_", size=(50, 1))],
+                     [sG.Radio('Approach Config', "_RECOV_OPT_", size=(50, 1))],
+                     [sG.Ok(), sG.Cancel()]])
+
+while True:
+    event, values = window2.Read()
+    if event is None or event == 'Exit' or event == 'Cancel':
+        break
+    if event == 'Ok':
+        if values[0]:
+            recovery_opt = 1
+        elif values[1]:
+            recovery_opt = 2
+        else:
+            break
+        config_file = sG.popup_get_file("Select your config file", "Select Configuration")
+        if config_file == '' or config_file is None:
+            recovery_opt = 0
+            break
+        else:
+            try:
+                with open(config_file, 'r') as f:
+                    config_dict = jsonload(f)
+            except Exception as e:
+                sG.popup_quick_message(f'exception {e}', keep_on_top=True, background_color='red', text_color='white')
+            break
+
+window2.Close()
 
 layout = [[sG.Text('Configure import and select files')],
-          [sG.Text('Submitted files'), sG.Multiline('', size=(70, 5), key='_FILES_', autoscroll=True)],
+          [sG.Text('Submitted files'), sG.Multiline(config_dict['FMl'], size=(70, 5), key='_FILES_', autoscroll=True)],
           [sG.Text('Select Files'), sG.FileBrowse(target='_FILE_NAME_'),
            sG.Input(key='_FILE_NAME_', visible=False, enable_events=True)],
           [sG.Text('White Noise Threshold'),
-           sG.Slider(range=(0, 500), key='_WHITE_NOISE_', default_value=100, orientation='horizontal')],
-          [sG.Text('Scan Time'), sG.InputText('4', key='_SCAN_TIME_'), sG.Text('Scan Error'),
-           sG.InputText('', key='_SCAN_ERROR_')],
-          [sG.Text('Start Datetime'), sG.InputText('MM/DD/YY hh:mm:ss', key='_TOTAL_START_DATE_')],
-          [sG.Text('End Datetime'), sG.InputText('MM/DD/YY hh:mm:ss', key='_TOTAL_END_DATE_')],
+           sG.Slider(range=(0, 500), key='_WHITE_NOISE_', default_value=config_dict['WN'], orientation='horizontal')],
+          [sG.Text('Scan Error'), sG.InputText(config_dict['SE'], key='_SCAN_ERROR_')],
+          [sG.Text('Start Datetime'), sG.InputText(config_dict['SDt'], key='_TOTAL_START_DATE_')],
+          [sG.Text('End Datetime'), sG.InputText(config_dict['EDt'], key='_TOTAL_END_DATE_')],
           [sG.Text('Output Folder'), sG.FolderBrowse(target='_OUT_FOLDER_'),
-           sG.Input(key='_OUT_FOLDER_')],
-          [sG.Text('Output File Name'), sG.InputText('', key='_OUT_FILE_NAME_')],
+           sG.Input(config_dict['OF'], key='_OUT_FOLDER_')],
+          [sG.Text('Output File Name'), sG.InputText(config_dict['OFN'], key='_OUT_FILE_NAME_')],
           [sG.Ok(), sG.Cancel(), sG.Button(button_text='Format CSV', key='_F_CSV_')]]
+
+if recovery_opt is not 0:
+    for n in range(0, config_dict['FC']):
+        get_csv(config_dict['FNR' + str(n)])
+        file_paths.append(config_dict['FNR' + str(n)])
 
 window = sG.Window("Bluefish File Processor", layout, icon=bf_icon)
 
@@ -301,7 +347,6 @@ while True:  # Event Loop
         total_end_time = window.Element('_TOTAL_END_DATE_').Get()
         out_folder = window.Element('_OUT_FOLDER_').Get()
         out_file_name = window.Element('_OUT_FILE_NAME_').Get()
-        scan_time_in = window.Element('_SCAN_TIME_').Get()
         scan_error_in = window.Element('_SCAN_ERROR_').Get()
         if total_end_time == '':
             sG.PopupError('Please enter an end time', icon=bf_icon, title='Error')
@@ -327,54 +372,66 @@ while True:  # Event Loop
                 start_day = datetime.fromtimestamp(
                     time.mktime(time.strptime(total_start_time, '%m/%d/%y %H:%M:%S'))).strftime('%m/%d/%y')
 
-                cancelled = False
-                for k in range(0, len(dataFiles)):
-                    text_name_in, text_time_in = '', ''
-
-                    if cancelled is False:
-                        win2 = sG.Window(layout=[[sG.Text('Name for Approach'), sG.InputText(key='_NAME_')],
-                                                 [sG.Text('Data Start Time'), sG.InputText('hh:mm:ss', key='_TIME_')],
-                                                 [sG.Checkbox('Designate Primary Approach', key='_PRIMARY_')],
-                                                 [sG.Ok(), sG.Cancel()]],
-                                         title='Data File Setup #' + str(k + 1),
-                                         icon=bf_icon)
-
-                        while True:  # Nested Event Loop
-                            event2, values2 = win2.Read()
-                            if event2 is None or event2 == 'Exit' or event2 == 'Cancel':
-                                cancelled = True
-                                break
-                            if event2 == 'Ok':
-                                text_name_in = win2.Element('_NAME_').Get()
-                                text_time_in = win2.Element('_TIME_').Get()
-
-                                if text_name_in is None or text_name_in == '':
-                                    sG.PopupError('Please enter a name', icon=bf_icon)
-                                else:
-                                    try:
-                                        time.strptime(text_time_in, '%H:%M:%S')
-                                    except ValueError:
-                                        sG.PopupError('Please enter a valid time in hh:mm:ss format', icon=bf_icon)
-                                        win2.Element('_TIME_').Update('hh:mm:ss')
-                                    except TypeError:
-                                        sG.PopupError('Please enter a time', icon=bf_icon)
-                                    else:
-                                        break
+                if recovery_opt == 0 or recovery_opt == 1:
+                    cancelled = False
+                    for k in range(0, len(dataFiles)):
+                        text_name_in, text_time_in = '', ''
 
                         if cancelled is False:
-                            approach_names.append(text_name_in)
-                            primary_approaches.append(values2['_PRIMARY_'])
-                            process_file(k, start_day + ' ' + text_time_in)
+                            win2 = sG.Window(layout=[[sG.Text('Name for Approach'), sG.InputText(key='_NAME_')],
+                                                     [sG.Text('Data Start Time'),
+                                                      sG.InputText('hh:mm:ss', key='_TIME_')],
+                                                     [sG.Checkbox('Designate Primary Approach', key='_PRIMARY_')],
+                                                     [sG.Ok(), sG.Cancel()]],
+                                             title='Data File Setup #' + str(k + 1),
+                                             icon=bf_icon)
 
-                        win2.Close()
+                            while True:  # Nested Event Loop
+                                event2, values2 = win2.Read()
+                                if event2 is None or event2 == 'Exit' or event2 == 'Cancel':
+                                    cancelled = True
+                                    break
+                                if event2 == 'Ok':
+                                    text_name_in = win2.Element('_NAME_').Get()
+                                    text_time_in = win2.Element('_TIME_').Get()
 
-                if cancelled is False:
-                    break
+                                    if text_name_in is None or text_name_in == '':
+                                        sG.PopupError('Please enter a name', icon=bf_icon)
+                                    else:
+                                        try:
+                                            time.strptime(text_time_in, '%H:%M:%S')
+                                        except ValueError:
+                                            sG.PopupError('Please enter a valid time in hh:mm:ss format', icon=bf_icon)
+                                            win2.Element('_TIME_').Update('hh:mm:ss')
+                                        except TypeError:
+                                            sG.PopupError('Please enter a time', icon=bf_icon)
+                                        else:
+                                            break
+
+                            if cancelled is False:
+                                approach_names.append(text_name_in)
+                                primary_approaches.append(values2['_PRIMARY_'])
+                                process_file(k, start_day + ' ' + text_time_in)
+
+                                config_dict['AN' + str(k)] = text_name_in
+                                config_dict['PA' + str(k)] = values2['_PRIMARY_']
+                                config_dict['T' + str(k)] = text_time_in
+
+                            win2.Close()
+
+                    if cancelled is False:
+                        break
+                    else:
+                        approach_names, primary_approaches = [], []
+                        address_table = setup_address_table()
+                        dataFiles = dataFilesBackup
+                        temp_log = temp_log + "Cancelled -> Reset Approaches\n"
                 else:
-                    approach_names, primary_approaches = [], []
-                    address_table = setup_address_table()
-                    dataFiles = dataFilesBackup
-                    temp_log = temp_log + "Cancelled -> Reset Approaches\n"
+                    for n in range(0, config_dict['FC']):
+                        approach_names.append(config_dict['AN' + str(n)])
+                        primary_approaches.append(config_dict['PA' + str(n)])
+                        process_file(n, start_day + ' ' + config_dict['T' + str(n)])
+                    break
 
     elif event == '_F_CSV_':
         input_file = sG.PopupGetFile('Select a CSV file to convert to Excel', 'Input File', icon=bf_icon)
@@ -384,7 +441,19 @@ while True:  # Event Loop
                 ex_file = xp.create_excel_from_csv(input_file, output_folder_path)
                 xp.format_excel(ex_file[0], ex_file[1], ex_file[2])
 
+config_dict['FMl'] = window.Element('_FILES_').Get()
 window.Close()
+
+config_dict['FC'] = len(dataFiles)
+config_dict['WN'] = noise_threshold
+config_dict['SE'] = scan_error_in
+config_dict['SDt'] = total_start_time
+config_dict['EDt'] = total_end_time
+config_dict['OF'] = out_folder
+config_dict['OFN'] = out_file_name
+
+for k in range(0, len(dataFiles)):
+    config_dict['FNR' + str(k)] = file_paths[k]
 
 time_to_cross = []
 matching_table = pd.DataFrame
@@ -422,8 +491,16 @@ while True:  # Event Loop
                     time_to_cross.append(int(ttc_in))
 
         if cancelled is False:
-            cont_processing(noise_threshold, int(scan_time_in), int(scan_error_in))
-            match_movements(total_start_time, total_end_time, out_folder, out_file_name, int(scan_time_in))
+            cont_processing(noise_threshold, SCAN_TIME, int(scan_error_in))
+            match_movements(total_start_time, total_end_time, out_folder, out_file_name, SCAN_TIME)
             window.Element('_CONSOLE_').Update(window.Element('_CONSOLE_').Get() + "----PROCESSING COMPLETE----")
+
+            if os.name == 'nt':
+                cfg_path = out_folder + '\\' + out_file_name + '.cfg'
+            else:
+                cfg_path = out_folder + '/' + out_file_name + '.cfg'
+
+            with open(cfg_path, 'w') as f:
+                jsondump(config_dict, f)
         else:
             time_to_cross = []
