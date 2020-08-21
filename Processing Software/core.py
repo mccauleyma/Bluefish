@@ -11,6 +11,12 @@ from json import (load as jsonload, dump as jsondump)
 SCAN_TIME = 4
 
 temp_log = ""
+
+if os.name == 'nt':
+    os_slash = '\\'
+else:
+    os_slash = '/'
+
 if os.name == 'nt':
     bf_icon = 'img\\blue-fish-clipart.ico\\blue-fish-clipart.ico'
 else:
@@ -264,12 +270,8 @@ def match_movements(start_time_entry, end_time_entry, output_path, output_name, 
                                         columns=['Address', 'Start Time', 'End Time', 'Start Location', 'End Location',
                                                  'Elapsed'])
 
-    if os.name == 'nt':
-        path = output_path + '\\' + output_name + '.csv'
-        path_timing = output_path + '\\' + output_name + '_timings.csv'
-    else:
-        path = output_path + '/' + output_name + '.csv'
-        path_timing = output_path + '/' + output_name + '_timings.csv'
+    path = output_path + os_slash + output_name + '.csv'
+    path_timing = output_path + os_slash + output_name + '_timings.csv'
 
     output_table.to_csv(path_or_buf=path, index=False)
     output_table_timings.to_csv(path_or_buf=path_timing, index=False)
@@ -378,12 +380,14 @@ while True:  # Event Loop
                         text_name_in, text_time_in = '', ''
 
                         if cancelled is False:
+                            path_split = file_paths[k].split(os_slash)
                             win2 = sG.Window(layout=[[sG.Text('Name for Approach'), sG.InputText(key='_NAME_')],
                                                      [sG.Text('Data Start Time'),
                                                       sG.InputText('hh:mm:ss', key='_TIME_')],
                                                      [sG.Checkbox('Designate Primary Approach', key='_PRIMARY_')],
                                                      [sG.Ok(), sG.Cancel()]],
-                                             title='Data File Setup #' + str(k + 1),
+                                             title='Data File Setup #' + str(k + 1) +
+                                                   ': ' + path_split[len(path_split) - 1],
                                              icon=bf_icon)
 
                             while True:  # Nested Event Loop
@@ -501,12 +505,7 @@ while True:  # Event Loop
             window.Element('_CONSOLE_').Update(window.Element('_CONSOLE_').Get() + "----PROCESSING COMPLETE----")
             rerun = True
 
-            if os.name == 'nt':
-                cfg_path = out_folder + '\\' + out_file_name + '.cfg'
-            else:
-                cfg_path = out_folder + '/' + out_file_name + '.cfg'
-
-            with open(cfg_path, 'w') as f:
+            with open(out_folder + os_slash + out_file_name + '.cfg', 'w') as f:
                 jsondump(config_dict, f)
         else:
             time_to_cross = []
