@@ -460,6 +460,7 @@ matching_table = pd.DataFrame
 matching_table_debug = pd.DataFrame
 output_table = pd.DataFrame
 output_table_timings = []
+rerun = False
 
 layout = [[sG.Text('Data Processing')],
           [sG.Multiline(temp_log + 'Click SUBMIT to start processing', key='_CONSOLE_', autoscroll=True)],
@@ -472,6 +473,10 @@ while True:  # Event Loop
     if event is None or event == 'Close':
         exit()
     if event == 'Submit':
+        if rerun:
+            out_file_name = sG.popup_get_text("You're rerunning with new TTC values. "
+                                              "Please enter a new output file name", title="TTC Rerun")
+
         cancelled = False
         for j in range(len(address_table)):
             valid = False
@@ -494,6 +499,7 @@ while True:  # Event Loop
             cont_processing(noise_threshold, SCAN_TIME, int(scan_error_in))
             match_movements(total_start_time, total_end_time, out_folder, out_file_name, SCAN_TIME)
             window.Element('_CONSOLE_').Update(window.Element('_CONSOLE_').Get() + "----PROCESSING COMPLETE----")
+            rerun = True
 
             if os.name == 'nt':
                 cfg_path = out_folder + '\\' + out_file_name + '.cfg'
