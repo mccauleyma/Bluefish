@@ -26,6 +26,7 @@ config_dict = {
     "FC": 0,
     "FMl": "",
     "WN": "100",
+    "TU": True,
     "SE": "",
     "SDt": "MM/DD/YY hh:mm:ss",
     "EDt": "MM/DD/YY hh:mm:ss",
@@ -285,7 +286,8 @@ dataFiles, dataFilesBackup, address_table, time_offsets, approach_names, primary
 window2 = sG.Window("Session Recovery",
                     [[sG.Radio('Files', "_RECOV_OPT_", size=(50, 1))],
                      [sG.Radio('Approach Config', "_RECOV_OPT_", size=(50, 1))],
-                     [sG.Ok(), sG.Cancel()]])
+                     [sG.Ok(), sG.Cancel()]],
+                    icon=bf_icon)
 
 while True:
     event, values = window2.Read()
@@ -298,7 +300,7 @@ while True:
             recovery_opt = 2
         else:
             break
-        config_file = sG.popup_get_file("Select your config file", "Select Configuration")
+        config_file = sG.popup_get_file("Select your config file", "Select Configuration", icon=bf_icon)
         if config_file == '' or config_file is None:
             recovery_opt = 0
             break
@@ -313,17 +315,21 @@ while True:
 window2.Close()
 
 layout = [[sG.Text('Configure import and select files')],
-          [sG.Text('Submitted files'), sG.Multiline(config_dict['FMl'], size=(70, 5), key='_FILES_', autoscroll=True)],
-          [sG.Text('Select Files'), sG.FileBrowse(target='_FILE_NAME_'),
+          [sG.Text('Submitted files', size=(20, 1)), sG.Multiline(config_dict['FMl'], size=(70, 5), key='_FILES_', autoscroll=True)],
+          [sG.Text('Select Files', size=(20, 1)), sG.FileBrowse(target='_FILE_NAME_'),
            sG.Input(key='_FILE_NAME_', visible=False, enable_events=True)],
-          [sG.Text('White Noise Threshold'),
+          [sG.Text('White Noise Threshold', size=(20, 1)),
            sG.Slider(range=(0, 500), key='_WHITE_NOISE_', default_value=config_dict['WN'], orientation='horizontal')],
-          [sG.Text('Scan Error'), sG.InputText(config_dict['SE'], key='_SCAN_ERROR_')],
-          [sG.Text('Start Datetime'), sG.InputText(config_dict['SDt'], key='_TOTAL_START_DATE_')],
-          [sG.Text('End Datetime'), sG.InputText(config_dict['EDt'], key='_TOTAL_END_DATE_')],
-          [sG.Text('Output Folder'), sG.FolderBrowse(target='_OUT_FOLDER_'),
-           sG.Input(config_dict['OF'], key='_OUT_FOLDER_')],
-          [sG.Text('Output File Name'), sG.InputText(config_dict['OFN'], key='_OUT_FILE_NAME_')],
+          [sG.Text('TTC Value Entry', size=(20, 1)), sG.Radio('Unified', 'TTC_Entry', default=config_dict['TU']),
+           sG.Radio('Individual', 'TTC_Entry', default=(not config_dict['TU']))],
+          [sG.Text('Scan Error', size=(20, 1)), sG.InputText(config_dict['SE'], key='_SCAN_ERROR_', size=(10, 10), enable_events=True)],
+          [sG.Text('Start Datetime', size=(20, 1)),
+           sG.InputText(config_dict['SDt'], key='_TOTAL_START_DATE_', size=(20, 10), enable_events=True)],
+          [sG.Text('End Datetime', size=(20, 1)),
+           sG.InputText(config_dict['EDt'], key='_TOTAL_END_DATE_', size=(20, 10), enable_events=True)],
+          [sG.Text('Output Folder', size=(20, 1)), sG.Input(config_dict['OF'], key='_OUT_FOLDER_'),
+           sG.FolderBrowse(target='_OUT_FOLDER_')],
+          [sG.Text('Output File Name', size=(20, 1)), sG.InputText(config_dict['OFN'], key='_OUT_FILE_NAME_')],
           [sG.Ok(), sG.Cancel(), sG.Button(button_text='Format CSV', key='_F_CSV_')]]
 
 if recovery_opt is not 0:
@@ -343,6 +349,14 @@ while True:  # Event Loop
             window.Element('_FILES_').Update(window.Element('_FILES_').Get() + file_name_raw)
             get_csv(file_name_raw)
             file_paths.append(file_name_raw)
+    elif event == '_SCAN_ERROR_' and values['_SCAN_ERROR_'] and values['_SCAN_ERROR_'][-1] not in '0123456789':
+        window['_SCAN_ERROR_'].update(values['_SCAN_ERROR_'][:-1])
+    elif event == '_TOTAL_START_DATE_' and values['_TOTAL_START_DATE_'] and \
+            values['_TOTAL_START_DATE_'][-1] not in '0123456789:/ ':
+        window['_TOTAL_START_DATE_'].update(values['_TOTAL_START_DATE_'][:-1])
+    elif event == '_TOTAL_END_DATE_' and values['_TOTAL_END_DATE_'] and \
+            values['_TOTAL_END_DATE_'][-1] not in '0123456789:/ ':
+        window['_TOTAL_END_DATE_'].update(values['_TOTAL_END_DATE_'][:-1])
     elif event == 'Ok':
         noise_threshold = values['_WHITE_NOISE_']
         total_start_time = window.Element('_TOTAL_START_DATE_').Get()
@@ -350,6 +364,7 @@ while True:  # Event Loop
         out_folder = window.Element('_OUT_FOLDER_').Get()
         out_file_name = window.Element('_OUT_FILE_NAME_').Get()
         scan_error_in = window.Element('_SCAN_ERROR_').Get()
+        ttc_unified = values[0]
         if total_end_time == '':
             sG.PopupError('Please enter an end time', icon=bf_icon, title='Error')
         elif total_start_time == '':
@@ -436,7 +451,6 @@ while True:  # Event Loop
                         primary_approaches.append(config_dict['PA' + str(n)])
                         process_file(n, start_day + ' ' + config_dict['T' + str(n)])
                     break
-
     elif event == '_F_CSV_':
         input_file = sG.PopupGetFile('Select a CSV file to convert to Excel', 'Input File', icon=bf_icon)
         if input_file is not None:
@@ -450,6 +464,7 @@ window.Close()
 
 config_dict['FC'] = len(dataFiles)
 config_dict['WN'] = noise_threshold
+config_dict['TU'] = ttc_unified
 config_dict['SE'] = scan_error_in
 config_dict['SDt'] = total_start_time
 config_dict['EDt'] = total_end_time
@@ -483,6 +498,10 @@ while True:  # Event Loop
 
         cancelled = False
         for j in range(len(address_table)):
+            if ttc_unified and j > 0:
+                for k in range(len(address_table) - 1):
+                    time_to_cross.append(time_to_cross[0])
+                continue
             valid = False
             ttc_in = ''
             while not valid and not cancelled:
